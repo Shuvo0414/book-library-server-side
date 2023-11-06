@@ -33,9 +33,17 @@ async function run() {
       .db("bookLibraryDb")
       .collection("newBooksCollection");
 
-    //  get bookcollection
+    //  get bookcollection by book-categories
     app.get("/api/v1/book-categories", async (req, res) => {
       const cursor = booksCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    // get all book from newbookcollection
+
+    app.get("/api/v1/books", async (req, res) => {
+      const cursor = newBooksCollection.find();
       const result = await cursor.toArray();
       res.send(result);
     });
