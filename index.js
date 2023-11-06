@@ -29,10 +29,21 @@ async function run() {
       .db("bookLibraryDb")
       .collection("booksCollection");
 
+    const newBooksCollection = client
+      .db("bookLibraryDb")
+      .collection("newBooksCollection");
+
     //  get bookcollection
     app.get("/api/v1/book-categories", async (req, res) => {
       const cursor = booksCollection.find();
       const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.post("/api/v1/books", async (req, res) => {
+      const newBooks = req.body;
+      console.log(newBooks);
+      const result = await newBooksCollection.insertOne(newBooks);
       res.send(result);
     });
 
