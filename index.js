@@ -1,14 +1,21 @@
 const express = require("express");
 const cors = require("cors");
-
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5001;
 
 // middleware
-app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173"],
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.vp3liji.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -20,6 +27,24 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+// verify user
+const verifyToken = async (req, res, next) => {
+  const token = req.cookies?.token;
+  console.log(token);
+
+  if (!token) {
+    return res.status(401).send({ message: "unauthorized access" });
+  }
+
+  jwt.verify(token, process.env.ACCESS_TOKE_SECRET, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ message: "unauthorized access" });
+    }
+    req.user = decoded;
+    next();
+  });
+};
 
 async function run() {
   try {
@@ -33,6 +58,32 @@ async function run() {
       .db("bookLibraryDb")
       .collection("newBooksCollection");
 
+    // auth related api
+
+    app.post("/api/v1/jwt", async (req, res) => {
+      const user = req.body;
+      // console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKE_SECRET, {
+        expiresIn: "1h",
+      });
+
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "none",
+        })
+        .send({ success: true });
+    });
+
+    // logout user clear cookie
+
+    app.post("/api/v1/logout", async (req, res) => {
+      const user = req.body;
+      // console.log("logout user");
+      res.clearCookie("token", { maxAge: 0 }).send({ success: true });
+    });
+
     //  get bookcollection by book-categories
     app.get("/api/v1/book-categories", async (req, res) => {
       const cursor = booksCollection.find();
@@ -42,7 +93,7 @@ async function run() {
 
     // get all book from newbookcollection
 
-    app.get("/api/v1/books", async (req, res) => {
+    app.get("/api/v1/books", verifyToken, async (req, res) => {
       const cursor = newBooksCollection.find();
       const result = await cursor.toArray();
       res.send(result);
@@ -57,7 +108,7 @@ async function run() {
       res.send(result);
     });
 
-    app.post("/api/v1/books", async (req, res) => {
+    app.post("/api/v1/books", verifyToken, async (req, res) => {
       const newBooks = req.body;
       console.log(newBooks);
       const result = await newBooksCollection.insertOne(newBooks);
