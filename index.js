@@ -48,6 +48,15 @@ async function run() {
       res.send(result);
     });
 
+    // get book by using categoryName
+    app.get("/api/v1/books/:categoryName", async (req, res) => {
+      const categoryName = req.params.categoryName;
+      console.log("Received request for brand:", categoryName);
+      const cursor = newBooksCollection.find({ categoryName });
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
     app.post("/api/v1/books", async (req, res) => {
       const newBooks = req.body;
       console.log(newBooks);
