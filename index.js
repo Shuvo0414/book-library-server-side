@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const port = process.env.PORT || 5001;
 
@@ -61,6 +61,25 @@ async function run() {
       const newBooks = req.body;
       console.log(newBooks);
       const result = await newBooksCollection.insertOne(newBooks);
+      res.send(result);
+    });
+
+    // upadte a book
+    app.put("/api/v1/books/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const upadteBooks = req.body;
+      const books = {
+        $set: {
+          image: upadteBooks.image,
+          name: upadteBooks.name,
+          author: upadteBooks.author,
+          categoryName: upadteBooks.categoryName,
+          rating: upadteBooks.rating,
+        },
+      };
+      const result = await newBooksCollection.updateOne(filter, books, options);
       res.send(result);
     });
 
