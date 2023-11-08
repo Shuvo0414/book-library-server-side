@@ -31,7 +31,7 @@ const client = new MongoClient(uri, {
 // verify user
 const verifyToken = async (req, res, next) => {
   const token = req.cookies?.token;
-  console.log(token);
+  //   console.log(token);
 
   if (!token) {
     return res.status(401).send({ message: "unauthorized access" });
@@ -57,6 +57,9 @@ async function run() {
     const newBooksCollection = client
       .db("bookLibraryDb")
       .collection("newBooksCollection");
+    const borrowCollection = client
+      .db("bookLibraryDb")
+      .collection("borrowCollection");
 
     // auth related api
 
@@ -102,16 +105,51 @@ async function run() {
     // get book by using categoryName
     app.get("/api/v1/books/:categoryName", async (req, res) => {
       const categoryName = req.params.categoryName;
-      console.log("Received request for brand:", categoryName);
+      //   console.log("Received request for brand:", categoryName);
       const cursor = newBooksCollection.find({ categoryName });
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    // get borrowed book user
+    app.get("/api/v1/borrowed", async (req, res) => {
+      console.log(req.query.email);
+      let query = {};
+      if (req.query?.email) {
+        query = { email: req.query.email };
+      }
+      const cursor = borrowCollection.find(query);
       const result = await cursor.toArray();
       res.send(result);
     });
 
     app.post("/api/v1/books", verifyToken, async (req, res) => {
       const newBooks = req.body;
-      console.log(newBooks);
+      //   console.log(newBooks);
       const result = await newBooksCollection.insertOne(newBooks);
+      res.send(result);
+    });
+
+    // borrow collection from user by client side
+    app.post("/api/v1/borrowBook", async (req, res) => {
+      const borrow = req.body;
+      //   console.log(borrow);
+      const result = await borrowCollection.insertOne(borrow);
+      res.send(result);
+    });
+
+    // Update only the 'quantity' field
+    app.patch("/api/v1/books/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const quantity = req.body.quantity;
+      console.log(quantity);
+      const updateDoc = {
+        $set: {
+          quantity: quantity,
+        },
+      };
+      const result = await newBooksCollection.updateOne(filter, updateDoc);
       res.send(result);
     });
 
@@ -131,6 +169,15 @@ async function run() {
         },
       };
       const result = await newBooksCollection.updateOne(filter, books, options);
+      res.send(result);
+    });
+
+    // deleted borrowed book
+
+    app.delete("/api/v1/borrowBook/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await borrowCollection.deleteOne(query);
       res.send(result);
     });
 
