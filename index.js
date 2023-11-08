@@ -10,7 +10,10 @@ const port = process.env.PORT || 5001;
 // middleware
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      // "http://localhost:5173"
+      "https://elaborate-genie-18d3e8.netlify.app",
+    ],
     credentials: true,
   })
 );
@@ -49,7 +52,7 @@ const verifyToken = async (req, res, next) => {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     const booksCollection = client
       .db("bookLibraryDb")
       .collection("booksCollection");
